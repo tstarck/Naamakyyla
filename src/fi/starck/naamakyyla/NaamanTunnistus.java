@@ -24,14 +24,14 @@ import android.graphics.Bitmap;
 import android.util.Log;
 import android.view.SurfaceHolder;
 
-class FdView extends SampleCvViewBase {
+class NaamanTunnistus extends KameranKaepistely {
     private static final String TAG = "Sample::FdView";
     private Mat                 mRgba;
     private Mat                 mGray;
 
     private CascadeClassifier   mCascade;
 
-    public FdView(Context context) {
+    public NaamanTunnistus(Context context) {
         super(context);
 
         try {
@@ -69,7 +69,6 @@ class FdView extends SampleCvViewBase {
         super.surfaceChanged(_holder, format, width, height);
 
         synchronized (this) {
-            // initialize Mats before usage
             mGray = new Mat();
             mRgba = new Mat();
         }
@@ -86,13 +85,14 @@ class FdView extends SampleCvViewBase {
 
         if (mCascade != null) {
         	/* [width,height] = [768,432] */
-            int height = mGray.rows();
-            int faceSize = Math.round(height * FdActivity.minFaceSize);
-            List<Rect> faces = new LinkedList<Rect>();
-            mCascade.detectMultiScale(mGray, faces, 1.1, 2, 2 // TODO: objdetect.CV_HAAR_SCALE_IMAGE
-                    , new Size(faceSize, faceSize));
+            // int height = mGray.rows();
+            // int faceSize = Math.round(height * FdActivity.minimiNaama);
 
-            for (Rect r : faces) {
+            List<Rect> naamat = new LinkedList<Rect>();
+
+            mCascade.detectMultiScale(mGray, naamat, 1.1, 2, 2, new Size(100, 100)); // Min sadan² pikselin naama
+
+            for (Rect r : naamat) {
             	Point p = inTheMiddle(r.tl(), r.br());
             	Log.i("HIT", "(tl; br) = (" + r.tl().toString() + "; " + r.br().toString() + ")");
 
@@ -109,10 +109,12 @@ class FdView extends SampleCvViewBase {
 
         Bitmap bmp = Bitmap.createBitmap(mRgba.cols(), mRgba.rows(), Bitmap.Config.ARGB_8888);
 
-        if (Utils.matToBitmap(mRgba, bmp))
+        if (Utils.matToBitmap(mRgba, bmp)) {
             return bmp;
+        }
 
         bmp.recycle();
+
         return null;
     }
 
@@ -121,11 +123,8 @@ class FdView extends SampleCvViewBase {
         super.run();
 
         synchronized (this) {
-            // Explicitly deallocate Mats
-            if (mRgba != null)
-                mRgba.release();
-            if (mGray != null)
-                mGray.release();
+            if (mRgba != null) mRgba.release();
+            if (mGray != null) mGray.release();
 
             mRgba = null;
             mGray = null;

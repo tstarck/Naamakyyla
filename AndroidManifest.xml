@@ -17,7 +17,7 @@
                       android:anyDensity="true" />
 
     <application android:label="@string/name" android:icon="@drawable/icon">
-        <activity android:name="FdActivity"
+        <activity android:name=".NaamakyylaActivity"
                   android:label="@string/name"
                   android:screenOrientation="landscape"
                   android:configChanges="keyboardHidden|orientation">

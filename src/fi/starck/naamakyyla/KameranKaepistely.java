@@ -13,32 +13,36 @@ import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
-public abstract class SampleCvViewBase extends SurfaceView implements SurfaceHolder.Callback, Runnable {
+/**
+ * This is lightly modified OpenCV face detection sample
+ * originally named SampleCvViewBase.
+ */
+public abstract class KameranKaepistely extends SurfaceView implements SurfaceHolder.Callback, Runnable {
     private static final String TAG = "Sample::SurfaceView";
 
-    private final SurfaceHolder       mHolder;
+    private final SurfaceHolder mHolder;
     private VideoCapture        mCamera;
     // private FpsMeter            mFps;
 
-    public SampleCvViewBase(Context context) {
+    public KameranKaepistely(Context context) {
         super(context);
         mHolder = getHolder();
         mHolder.addCallback(this);
         // mFps = new FpsMeter();
-        Log.i(TAG, "Instantiated new " + this.getClass());
+        // Log.i(TAG, "Instantiated new " + this.getClass());
     }
 
     public void surfaceChanged(SurfaceHolder _holder, int format, int width, int height) {
-        Log.i(TAG, "surfaceCreated");
+        // Log.i(TAG, "surfaceCreated");
         synchronized (this) {
             if (mCamera != null && mCamera.isOpened()) {
-                Log.i(TAG, "before mCamera.getSupportedPreviewSizes()");
+                // Log.i(TAG, "before mCamera.getSupportedPreviewSizes()");
                 List<Size> sizes = mCamera.getSupportedPreviewSizes();
-                Log.i(TAG, "after mCamera.getSupportedPreviewSizes()");
+                // Log.i(TAG, "after mCamera.getSupportedPreviewSizes()");
                 int mFrameWidth = width;
                 int mFrameHeight = height;
 
-                // selecting optimal camera preview size
+                // Selecting optimal camera preview size
                 {
                     double minDiff = Double.MAX_VALUE;
                     for (Size size : sizes) {
@@ -57,7 +61,7 @@ public abstract class SampleCvViewBase extends SurfaceView implements SurfaceHol
     }
 
     public void surfaceCreated(SurfaceHolder holder) {
-        Log.i(TAG, "surfaceCreated");
+        // Log.i(TAG, "surfaceCreated");
         mCamera = new VideoCapture(Highgui.CV_CAP_ANDROID);
         if (mCamera.isOpened()) {
             (new Thread(this)).start();
@@ -69,7 +73,7 @@ public abstract class SampleCvViewBase extends SurfaceView implements SurfaceHol
     }
 
     public void surfaceDestroyed(SurfaceHolder holder) {
-        Log.i(TAG, "surfaceDestroyed");
+        // Log.i(TAG, "surfaceDestroyed");
         if (mCamera != null) {
             synchronized (this) {
                 mCamera.release();
@@ -81,7 +85,7 @@ public abstract class SampleCvViewBase extends SurfaceView implements SurfaceHol
     protected abstract Bitmap processFrame(VideoCapture capture);
 
     public void run() {
-        Log.i(TAG, "Starting processing thread");
+        // Log.i(TAG, "Starting processing thread");
         // mFps.init();
 
         while (true) {
@@ -112,6 +116,6 @@ public abstract class SampleCvViewBase extends SurfaceView implements SurfaceHol
             }
         }
 
-        Log.i(TAG, "Finishing processing thread");
+        // Log.i(TAG, "Finishing processing thread");
     }
 }
