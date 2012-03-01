@@ -25,11 +25,12 @@ import android.util.Log;
 import android.view.SurfaceHolder;
 
 class NaamanTunnistus extends KameranKaepistely {
-    private static final String TAG = "Sample::FdView";
-    private Mat                 mRgba;
-    private Mat                 mGray;
+    private static final String TAG = "Tunnistus";
 
-    private CascadeClassifier   mCascade;
+    private CascadeClassifier mCascade;
+
+    private Mat mRgba;
+    private Mat mGray;
 
     public NaamanTunnistus(Context context) {
         super(context);
@@ -84,17 +85,14 @@ class NaamanTunnistus extends KameranKaepistely {
         capture.retrieve(mGray, Highgui.CV_CAP_ANDROID_GREY_FRAME);
 
         if (mCascade != null) {
-        	/* [width,height] = [768,432] */
-            // int height = mGray.rows();
-            // int faceSize = Math.round(height * FdActivity.minimiNaama);
-
             List<Rect> naamat = new LinkedList<Rect>();
 
             mCascade.detectMultiScale(mGray, naamat, 1.1, 2, 2, new Size(100, 100)); // Min sadan² pikselin naama
 
             for (Rect r : naamat) {
             	Point p = inTheMiddle(r.tl(), r.br());
-            	Log.i("HIT", "(tl; br) = (" + r.tl().toString() + "; " + r.br().toString() + ")");
+
+                // Log.i("HIT", "({tl} {br}) = (" + r.tl().toString() + " " + r.br().toString() + ")");
 
             	if (r.contains(new Point(384, 216))) {
                     Core.circle(mRgba, p, 20, new Scalar(255, 100, 100, 255), 3);

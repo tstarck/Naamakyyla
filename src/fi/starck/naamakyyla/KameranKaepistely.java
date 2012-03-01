@@ -22,23 +22,17 @@ public abstract class KameranKaepistely extends SurfaceView implements SurfaceHo
 
     private final SurfaceHolder mHolder;
     private VideoCapture        mCamera;
-    // private FpsMeter            mFps;
 
     public KameranKaepistely(Context context) {
         super(context);
         mHolder = getHolder();
         mHolder.addCallback(this);
-        // mFps = new FpsMeter();
-        // Log.i(TAG, "Instantiated new " + this.getClass());
     }
 
     public void surfaceChanged(SurfaceHolder _holder, int format, int width, int height) {
-        // Log.i(TAG, "surfaceCreated");
         synchronized (this) {
             if (mCamera != null && mCamera.isOpened()) {
-                // Log.i(TAG, "before mCamera.getSupportedPreviewSizes()");
                 List<Size> sizes = mCamera.getSupportedPreviewSizes();
-                // Log.i(TAG, "after mCamera.getSupportedPreviewSizes()");
                 int mFrameWidth = width;
                 int mFrameHeight = height;
 
@@ -61,7 +55,6 @@ public abstract class KameranKaepistely extends SurfaceView implements SurfaceHo
     }
 
     public void surfaceCreated(SurfaceHolder holder) {
-        // Log.i(TAG, "surfaceCreated");
         mCamera = new VideoCapture(Highgui.CV_CAP_ANDROID);
         if (mCamera.isOpened()) {
             (new Thread(this)).start();
@@ -73,7 +66,6 @@ public abstract class KameranKaepistely extends SurfaceView implements SurfaceHo
     }
 
     public void surfaceDestroyed(SurfaceHolder holder) {
-        // Log.i(TAG, "surfaceDestroyed");
         if (mCamera != null) {
             synchronized (this) {
                 mCamera.release();
@@ -85,9 +77,6 @@ public abstract class KameranKaepistely extends SurfaceView implements SurfaceHo
     protected abstract Bitmap processFrame(VideoCapture capture);
 
     public void run() {
-        // Log.i(TAG, "Starting processing thread");
-        // mFps.init();
-
         while (true) {
             Bitmap bmp = null;
 
@@ -101,21 +90,16 @@ public abstract class KameranKaepistely extends SurfaceView implements SurfaceHo
                 }
 
                 bmp = processFrame(mCamera);
-
-                // mFps.measure();
             }
 
             if (bmp != null) {
                 Canvas canvas = mHolder.lockCanvas();
                 if (canvas != null) {
                     canvas.drawBitmap(bmp, (canvas.getWidth() - bmp.getWidth()) / 2, (canvas.getHeight() - bmp.getHeight()) / 2, null);
-                    // mFps.draw(canvas, (canvas.getWidth() - bmp.getWidth()) / 2, 0);
                     mHolder.unlockCanvasAndPost(canvas);
                 }
                 bmp.recycle();
             }
         }
-
-        // Log.i(TAG, "Finishing processing thread");
     }
 }
