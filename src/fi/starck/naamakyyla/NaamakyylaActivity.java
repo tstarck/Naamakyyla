@@ -10,4 +10,10 @@ public class NaamakyylaActivity extends Activity {
         super.onCreate(state);
         setContentView(new NaamanTunnistus(this));
     }
+
+    /** Called when back button is pressed. */
+    @Override
+    public void onBackPressed() {
+        finish();
+    }
 }
