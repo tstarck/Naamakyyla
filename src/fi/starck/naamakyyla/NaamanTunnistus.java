@@ -1,11 +1,14 @@
 package fi.starck.naamakyyla;
 
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
 import org.opencv.android.Utils;
 import org.opencv.core.Core;
@@ -19,6 +22,9 @@ import org.opencv.highgui.VideoCapture;
 import org.opencv.objdetect.CascadeClassifier;
 import org.opencv.R;
 
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothSocket;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.util.Log;
@@ -27,7 +33,12 @@ import android.view.SurfaceHolder;
 class NaamanTunnistus extends KameranKaepistely {
     private static final String TAG = "Tunnistus";
 
+    // Laita tähän ohjattavan NXT-palikan Bluetooth MAC-osoite!
+    private final String NXT_MAC = "00:16:53:0A:85:ED";
+
     private CascadeClassifier mCascade;
+
+    private DataOutputStream virta;
 
     private Mat mRgba;
     private Mat mGray;
@@ -50,18 +61,66 @@ class NaamanTunnistus extends KameranKaepistely {
             os.close();
 
             mCascade = new CascadeClassifier(cascadeFile.getAbsolutePath());
+
             if (mCascade.empty()) {
                 Log.e(TAG, "Failed to load cascade classifier");
                 mCascade = null;
-            } else
+            }
+            else {
                 Log.i(TAG, "Loaded cascade classifier from " + cascadeFile.getAbsolutePath());
+            }
 
             cascadeFile.delete();
             cascadeDir.delete();
 
-        } catch (IOException e) {
-            e.printStackTrace();
+        }
+        catch (IOException e) {
             Log.e(TAG, "Failed to load cascade. Exception thrown: " + e);
+            return;
+        }
+
+        /* Bluetooth-yhteyden alustus
+         *
+         * Valitaan oikea NXT-laite, joka tulee olla
+         * ennestään paritettu puhelimen kanssa.
+         *
+         * Valinta tehdään mac-osoitteen perusteella
+         * (ks. NXT_MAC).
+         */
+
+        BluetoothDevice vaerkki = null;
+        BluetoothSocket pistoke = null;
+        BluetoothAdapter bt = BluetoothAdapter.getDefaultAdapter();
+
+        if (bt == null) {
+            Log.e(TAG, "Blutuut ei ole olemassa");
+            return;
+        }
+
+        Set<BluetoothDevice> paritetut = bt.getBondedDevices();
+
+        for (BluetoothDevice laite : paritetut) {
+            // Log.i(TAG, "Laite: '" + laite.getName() + "' (" + laite.getBluetoothClass().toString() + ") " + laite.getAddress());
+
+            if (laite.getAddress().equals(NXT_MAC)) {
+                Log.i(TAG, "Valittu BT " + laite.getName());
+                vaerkki = laite;
+                break;
+            }
+        }
+
+        if (vaerkki == null) {
+            Log.e(TAG, "Bluetuut-laite uupuu");
+        }
+
+        try {
+            pistoke = vaerkki.createRfcommSocketToServiceRecord(UUID.fromString("00001101-0000-1000-8000-00805F9B34FB"));
+            pistoke.connect();
+            virta = new DataOutputStream(pistoke.getOutputStream());
+            // Log.i(TAG, "Blutuut skulaa");
+        }
+        catch (IOException ioe) {
+            Log.e(TAG, "Blutuut yhteys feilas");
         }
     }
 
@@ -76,11 +135,15 @@ class NaamanTunnistus extends KameranKaepistely {
     }
 
     private Point inTheMiddle(Point a, Point b) {
-    	return new Point(a.x+(b.x-a.x)/2, a.y+(b.y-a.y)/2);
+        return new Point(a.x+(b.x-a.x)/2, a.y+(b.y-a.y)/2);
     }
 
     @Override
     protected Bitmap processFrame(VideoCapture capture) {
+        try {
+            Thread.sleep(100);
+        } catch (InterruptedException pass) {}
+
         capture.retrieve(mRgba, Highgui.CV_CAP_ANDROID_COLOR_FRAME_RGBA);
         capture.retrieve(mGray, Highgui.CV_CAP_ANDROID_GREY_FRAME);
 
@@ -90,18 +153,28 @@ class NaamanTunnistus extends KameranKaepistely {
             mCascade.detectMultiScale(mGray, naamat, 1.1, 2, 2, new Size(100, 100)); // Min sadan² pikselin naama
 
             for (Rect r : naamat) {
-            	Point p = inTheMiddle(r.tl(), r.br());
+                Point p = inTheMiddle(r.tl(), r.br());
 
-                // Log.i("HIT", "({tl} {br}) = (" + r.tl().toString() + " " + r.br().toString() + ")");
+                Log.i("HIT", "({tl} {br}) = (" + r.tl().toString() + " " + r.br().toString() + ")");
 
-            	if (r.contains(new Point(384, 216))) {
+                if (r.contains(new Point(384, 216))) {
                     Core.circle(mRgba, p, 20, new Scalar(255, 100, 100, 255), 3);
-            	}
-            	else {
+                }
+                else {
                     Core.rectangle(mRgba, r.tl(), r.br(), new Scalar(127, 127, 127, 255), 2);
-            	}
+                }
 
-            	break;
+                try {
+                    virta.writeInt((int)(p.x*p.y));
+                }
+                catch (IOException ioe) {
+                    Log.e(TAG, "Blutuut-kirjoitus feilasi");
+                }
+                catch (Exception e) {
+                    Log.e(TAG, "Jokin feilasi");
+                }
+
+                break;
             }
         }
 
