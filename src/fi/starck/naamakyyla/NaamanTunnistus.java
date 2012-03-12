@@ -31,10 +31,17 @@ import android.util.Log;
 import android.view.SurfaceHolder;
 
 class NaamanTunnistus extends KameranKaepistely {
-    private static final String TAG = "Tunnistus";
+    private static final String TAG = "NaamanTunnistus";
 
-    // Laita tähän ohjattavan NXT-palikan Bluetooth MAC-osoite!
+    // Ohjattavan NXT-palikan Bluetooth MAC-osoite
     private final String NXT_MAC = "00:16:53:0A:85:ED";
+
+    // Neliön koordinaatit, jonne naama yritetään osuttaa
+    private final Rect kohde  = new Rect(300, 0, 200, 120);
+    private final Rect keskus = new Rect(300, 0, 200, 480);
+
+    // Alle minimi (px*px) kokoisia naamoja ei yritetä tunnistaa
+    private final Size minimi = new Size(100, 100);
 
     private CascadeClassifier mCascade;
 
@@ -134,12 +141,18 @@ class NaamanTunnistus extends KameranKaepistely {
         }
     }
 
+    private Point inTheMiddle(Rect r) {
+        return inTheMiddle(r.tl(), r.br());
+    }
+
     private Point inTheMiddle(Point a, Point b) {
         return new Point(a.x+(b.x-a.x)/2, a.y+(b.y-a.y)/2);
     }
 
     @Override
     protected Bitmap processFrame(VideoCapture capture) {
+        int viesti = 0;
+
         try {
             Thread.sleep(100);
         } catch (InterruptedException pass) {}
@@ -150,31 +163,45 @@ class NaamanTunnistus extends KameranKaepistely {
         if (mCascade != null) {
             List<Rect> naamat = new LinkedList<Rect>();
 
-            mCascade.detectMultiScale(mGray, naamat, 1.1, 2, 2, new Size(100, 100)); // Min sadan² pikselin naama
+            mCascade.detectMultiScale(mGray, naamat, 1.1, 2, 2, minimi);
+
+            /* DEBUG */
+            Core.rectangle(mRgba, kohde.tl(), kohde.br(), new Scalar(0, 200, 200, 255), 2);
+            Core.rectangle(mRgba, keskus.tl(), keskus.br(), new Scalar(0, 200, 200, 255), 1);
 
             for (Rect r : naamat) {
-                Point p = inTheMiddle(r.tl(), r.br());
+                Point naama = inTheMiddle(r);
 
-                Log.i("HIT", "({tl} {br}) = (" + r.tl().toString() + " " + r.br().toString() + ")");
+                // Log.i("HIT", "({tl} {br}) = (" + r.tl().toString() + " " + r.br().toString() + ")");
 
-                if (r.contains(new Point(384, 216))) {
-                    Core.circle(mRgba, p, 20, new Scalar(255, 100, 100, 255), 3);
+                if (kohde.contains(naama)) {
+                    // Alles gut, mache nichts
+                    break;
+                }
+                else if (keskus.contains(naama)) {
+                    // Oikea sektori, joten mennään eteenpäin
+                    Core.circle(mRgba, naama, 20, new Scalar(255, 100, 100, 255), 3);
+                    viesti = 1;
                 }
                 else {
+                    // Naama on sivulla, joten käänny
                     Core.rectangle(mRgba, r.tl(), r.br(), new Scalar(127, 127, 127, 255), 2);
-                }
-
-                try {
-                    virta.writeInt((int)(p.x*p.y));
-                }
-                catch (IOException ioe) {
-                    Log.e(TAG, "Blutuut-kirjoitus feilasi");
-                }
-                catch (Exception e) {
-                    Log.e(TAG, "Jokin feilasi");
+                    viesti = (int) naama.x/9;
+                    viesti <<= 8;
+                    viesti |= 2;
                 }
 
                 break;
+            }
+
+            try {
+                virta.writeInt(viesti);
+            }
+            catch (IOException ioe) {
+                Log.e(TAG, "IO-juttu feilasi");
+            }
+            catch (Exception e) {
+                Log.e(TAG, "Jotain feilasi");
             }
         }
 
