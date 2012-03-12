@@ -18,7 +18,7 @@ import android.view.SurfaceView;
  * originally named SampleCvViewBase.
  */
 public abstract class KameranKaepistely extends SurfaceView implements SurfaceHolder.Callback, Runnable {
-    private static final String TAG = "Sample::SurfaceView";
+    private static final String TAG = "KameranKaepistely";
 
     private final SurfaceHolder mHolder;
     private VideoCapture        mCamera;
