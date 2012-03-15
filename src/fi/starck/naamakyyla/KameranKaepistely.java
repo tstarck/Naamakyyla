@@ -14,8 +14,13 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
 /**
- * This is lightly modified OpenCV face detection sample
- * originally named SampleCvViewBase.
+ * <p>Android camera handling.</p>
+ *
+ * This is only trivially modified OpenCV Android face detection
+ * sample class originally called SampleCvViewBase.
+ *
+ * @author OpenCV developers
+ * @author Tuomas Starck
  */
 public abstract class KameranKaepistely extends SurfaceView implements SurfaceHolder.Callback, Runnable {
     private static final String TAG = "KameranKaepistely";
